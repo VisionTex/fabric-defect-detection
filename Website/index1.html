@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionTex - Advanced Fabric Defect Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --primary-light: #7dd3fc;
+            --secondary: #334155;
+            --background: #0f172a;
+            --background-light: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --light: #1e293b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --accent: #8b5cf6;
+            --border-radius: 8px;
+            --card-bg: rgba(30, 41, 59, 0.8);
+            --card-border: rgba(148, 163, 184, 0.1);
+            --header-height: 70px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 35%, rgba(14, 165, 233, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 75% 44%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--background);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+        
+        /* Glowing effect */
+        .glow {
+            position: relative;
+        }
+        
+        .glow::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            z-index: -1;
+            filter: blur(15px);
+            opacity: 0.3;
+            border-radius: var(--border-radius);
+        }
+        
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            height: var(--header-height);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            position: relative;
+        }
+        
+        .logo::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border-radius: 50%;
+            left: -15px;
+            opacity: 0.2;
+            filter: blur(10px);
+            animation: pulse 3s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.2; }
+            50% { transform: scale(1.2); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 0.2; }
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+        }
+        
+        .nav-links li {
+            position: relative;
+        }
+        
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary-light);
+        }
+        
+        .nav-links a::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+            z-index: -1;
+        }
+        
+        .nav-links a:hover::before {
+            width: 80%;
+        }
+        
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Hero Section */
+        .hero {
+            display: flex;
+            align-items: center;
+            min-height: 100vh;
+            padding: calc(var(--header-height) + 2rem) 0 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .hero-content {
+            flex: 1;
+            padding-right: 2rem;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-image {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .hero-image img {
+            max-width: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.5s, box-shadow 0.5s;
+        }
+        
+        .hero-image:hover img {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.4);
+        }
+        
+        .hero-image::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            background: var(--primary);
+            filter: blur(100px);
+            opacity: 0.15;
+            z-index: -1;
+            border-radius: 50%;
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+            position: relative;
+        }
+        
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+        }
+        
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text);
+            text-align: center;
+            padding-top: 2rem;
+            position: relative;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 2px;
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+        
+        p {
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+            z-index: -1;
+            transition: opacity 0.3s;
+            opacity: 0;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.4);
+        }
+        
+        .btn:hover::before {
+            opacity: 1;
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        /* Features Section */
+        .features {
+            padding: 8rem 0;
+            background-color: var(--background-light);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .features::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 30%);
+            z-index: 0;
+        }
+        
+        .features-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .feature-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.4s, box-shadow 0.4s;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        /* Demo Section */
+        .demo {
+            padding: 8rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .demo::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .demo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+        
+        .demo-image {
+            max-width: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.5s;
+            position: relative;
+        }
+        
+        .demo-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(14, 165, 233, 0.2), rgba(139, 92, 246, 0.2));
+            border-radius: var(--border-radius);
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        .demo-image:hover {
+            transform: scale(1.02);
+        }
+        
+        .demo-image:hover::before {
+            opacity: 1;
+        }
+        
+        .demo-text {
+            text-align: center;
+            max-width: 800px;
+        }
+        
+        .detection-results {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(5px);
+        }
+        
+        .detection-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .detection-item:hover {
+            transform: translateX(10px);
+        }
+        
+        .detection-item:last-child {
+            border-bottom: none;
+        }
+        
+        .confidence {
+            font-weight: bold;
+            color: var(--primary);
+            position: relative;
+        }
+        
+        .confidence::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s;
+        }
+        
+        .detection-item:hover .confidence::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+        
+        /* Technology Section */
+        .technology {
+            padding: 8rem 0;
+            background-color: var(--background-light);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .technology::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 10% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 30%);
+            z-index: 0;
+        }
+        
+        .tech-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2.5rem;
+            justify-content: center;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .tech-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: transform 0.4s, box-shadow 0.4s;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tech-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary), var(--accent));
+            transform: scaleY(0);
+            transform-origin: top;
+            transition: transform 0.4s;
+        }
+        
+        .tech-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tech-card:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .tech-logo {
+            height: 100px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .tech-logo img {
+            max-height: 100%;
+            transition: transform 0.5s;
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.3));
+        }
+        
+        .tech-card:hover .tech-logo img {
+            transform: scale(1.1);
+        }
+        
+        /* Defect Types Section */
+        .defect-types {
+            padding: 8rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .defect-types::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .defect-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .defect-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--card-border);
+            transition: transform 0.4s, box-shadow 0.4s;
+            position: relative;
+        }
+        
+        .defect-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+        
+        .defect-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .defect-card:hover::after {
+            transform: scaleX(1);
+        }
+        
+        .defect-image {
+            height: 200px;
+            background-color: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .defect-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(14, 165, 233, 0.1), rgba(139, 92, 246, 0.1));
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        
+        .defect-card:hover .defect-image::before {
+            opacity: 1;
+        }
+        
+        .defect-content {
+            padding: 1.5rem;
+        }
+        
+        .grade {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 0.8rem;
+            font-size: 0.9rem;
+            transition: transform 0.3s;
+        }
+        
+        .defect-card:hover .grade {
+            transform: scale(1.05);
+        }
+        
+        .grade-a {
+            background-color: rgba(22, 163, 74, 0.2);
+            color: #4ade80;
+            border: 1px solid rgba(22, 163, 74, 0.3);
+        }
+        
+        .grade-b {
+            background-color: rgba(202, 138, 4, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(202, 138, 4, 0.3);
+        }
+        
+        .grade-c {
+            background-color: rgba(220, 38, 38, 0.2);
+            color: #f87171;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+        
+        .grade-points {
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+            color: var(--text-muted);
+        }
+        
+        /* Grading System Section */
+        .grading-system {
+            padding: 8rem 0;
+            background-color: var(--background-light);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .grading-system::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 90% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 30%);
+            z-index: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+        }
+        
+        thead {
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        th, td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        tbody tr {
+            background-color: var(--card-bg);
+            transition: background-color 0.3s, transform 0.3s;
+        }
+        
+        tbody tr:hover {
+            background-color: rgba(30, 41, 59, 0.9);
+            transform: translateX(5px);
+        }
+        
+        /* About Section */
+        .about {
+            padding: 8rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .about::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .about-container {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+        
+        .about-image {
+            flex: 1;
+            position: relative;
+        }
+        
+        .about-image img {
+            max-width: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.5s;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .about-image::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 100%;
+            height: 100%;
+            border: 2px solid var(--primary);
+            border-radius: var(--border-radius);
+            z-index: 0;
+            transition: transform 0.5s;
+        }
+        
+        .about-image:hover img {
+            transform: translate(-10px, -10px);
+        }
+        
+        .about-image:hover::before {
+            transform: translate(10px, 10px);
+        }
+        
+        .about-content {
+            flex: 1;
+        }
+        
+        /* Team Section */
+        .team {
+            padding: 8rem 0;
+            background-color: var(--background-light);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .team::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 90% 10%, rgba(14, 165, 233, 0.1) 0%, transparent 30%),
+                radial-gradient(circle at 10% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 30%);
+            z-index: 0;
+        }
+        
+        .team-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+            justify-content: center;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .team-member {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2.5rem;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            transition: transform 0.4s, box-shadow 0.4s;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .team-member::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+        
+        .team-member:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .team-member:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .member-image {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            background-color: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .member-image::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        
+        .team-member:hover .member-image::before {
+            opacity: 1;
+        }
+        
+        .member-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        .team-member:hover .member-image img {
+            transform: scale(1.1);
+        }
+        
+        .member-info h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .member-id {
+            color: var(--primary);
+            font-weight: 500;
+            margin-bottom: 1rem;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+        
+        .member-role {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .member-role::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 1px;
+        }
+        
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .social-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            transition: all 0.3s;
+        }
+        
+        .social-icon:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-3px);
+        }
+        
+        /* Contact Section */
+        .contact {
+            padding: 8rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .contact::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230ea5e9' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+        
+        .contact-form {
+            max-width: 700px;
+            margin: 3rem auto;
+            background-color: var(--card-bg);
+            padding: 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .contact-form::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+        
+        .form-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 1rem;
+            background-color: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            color: var(--text);
+            transition: all 0.3s;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Footer */
+        footer {
+            background-color: var(--background-light);
+            color: var(--text);
+            padding: 4rem 0 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+        }
+        
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        .footer-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .social-links a {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .social-links a:hover {
+            color: white;
+            background-color: var(--primary);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+        
+        /* Animated Particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--primary);
+            opacity: 0.3;
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.3;
+            }
+            25% {
+                opacity: 0.4;
+            }
+            50% {
+                transform: translateY(-100px) rotate(180deg);
+                opacity: 0.2;
+            }
+            75% {
+                opacity: 0.4;
+            }
+            100% {
+                transform: translateY(0) rotate(360deg);
+                opacity: 0.3;
+            }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1200px) {
+            h1 {
+                font-size: 3rem;
+            }
+            
+            h2 {
+                font-size: 2.2rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .hero-content, .about-content {
+                padding-right: 0;
+            }
+            
+            .about-container {
+                flex-direction: column;
+            }
+            
+            .about-image {
+                margin-bottom: 2rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            h2 {
+                font-size: 2rem;
+            }
+            
+            .hero {
+                flex-direction: column;
+                padding-top: calc(var(--header-height) + 4rem);
+            }
+            
+            .hero-content {
+                margin-bottom: 3rem;
+                text-align: center;
+            }
+            
+            .hero-content h1::after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: var(--header-height);
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                background-color: var(--background);
+                padding: 1rem 0;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .nav-links.active {
+                display: flex;
+            }
+            
+            .nav-links li {
+                margin: 0.5rem 0;
+                text-align: center;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .contact-form {
+                padding: 2rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .container {
+                padding: 0 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+            
+            .feature-card, .tech-card, .team-member {
+                padding: 1.5rem;
+            }
+            
+            .contact-form {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Particles Background -->
+    <div class="particles" id="particles"></div>
+
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Vision<span>Tex</span></div>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#demo">Demo</a></li>
+                    <li><a href="#defects">Defect Types</a></li>
+                    <li><a href="#grading">Grading System</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#team">Team</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Advanced Fabric Defect Detection</h1>
+                <p>VisionTex introduces cutting-edge AI technology powered by YOLOv8 to identify and classify fabric defects with unparalleled accuracy. Our solution enhances quality control, reduces waste, and optimizes production in textile manufacturing.</p>
+                <a href="#demo" class="btn glow">See Demo <i class="fas fa-arrow-right ml-2"></i></a>
+            </div>
+            <div class="hero-image">
+                <img src="/api/placeholder/600/400" alt="Fabric defect detection in action">
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2>Key Features</h2>
+            <div class="features-container">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-search"></i></div>
+                    <h3>High Precision Detection</h3>
+                    <p>Our YOLOv8-based algorithm delivers 97% accuracy in identifying fabric defects in real-time, ensuring comprehensive quality control.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-tags"></i></div>
+                    <h3>Multi-Class Classification</h3>
+                    <p>Identify and categorize 10+ types of fabric defects with detailed information on severity and classification.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chart-bar"></i></div>
+                    <h3>American Grading System</h3>
+                    <p>Implements the American grading standard for textile quality assessment, providing consistent and internationally recognized evaluation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+                    <h3>Real-Time Processing</h3>
+                    <p>Process imagery in real-time on production lines, enabling immediate quality control decisions and reducing waste.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3>Performance Analytics</h3>
+                    <p>Track defect patterns, generate reports, and analyze quality metrics to continuously improve manufacturing processes.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-sliders-h"></i></div>
+                    <h3>Customizable Parameters</h3>
+                    <p>Fine-tune detection sensitivity and grading thresholds to meet specific production requirements and quality standards.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="demo">
+        <div class="container">
+            <h2>VisionTex in Action</h2>
+            <div class="demo-container">
+                <img src="/api/placeholder/800/450" alt="Fabric defect detection demo" class="demo-image">
+                <div class="demo-text">
+                    <p>Our YOLOv8-based system processes fabric imagery in real-time, identifying defects with high precision and classifying them according to industry standards.</p>
+                </div>
+                <div class="detection-results glow">
+                    <h3>Sample Detection Results</h3>
+                    <div class="detection-item">
+                        <span><i class="fas fa-exclamation-circle text-danger mr-2"></i> Hole (Major)</span>
+                        <span class="confidence">Confidence: 98.7%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span><i class="fas fa-exclamation-triangle text-warning mr-2"></i> Color Stain</span>
+                        <span class="confidence">Confidence: 95.2%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span><i class="fas fa-exclamation-triangle text-warning mr-2"></i> Thread Break</span>
+                        <span class="confidence">Confidence: 94.1%</span>
+                    </div>
+                    <div class="detection-item">
+                        <span><i class="fas fa-info-circle text-primary mr-2"></i> Slub</span>
+                        <span class="confidence">Confidence: 91.8%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="technology" class="technology">
+        <div class="container">
+            <h2>Our Technology</h2>
+            <div class="tech-container">
+                <div class="tech-card">
+                    <div class="tech-logo">
+                        <img src="/api/placeholder/120/80" alt="YOLOv8 logo">
+                    </div>
+                    <h3>YOLOv8</h3>
+                    <p>State-of-the-art object detection algorithm optimized for speed and accuracy, perfect for real-time fabric defect detection.</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">
+                        <img src="/api/placeholder/120/80" alt="Deep Learning logo">
+                    </div>
+                    <h3>Deep Learning</h3>
+                    <p>Custom-trained neural networks that continuously improve through machine learning to detect even subtle fabric imperfections.</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-logo">
+                        <img src="/api/placeholder/120/80" alt="Computer Vision logo">
+                    </div>
+                    <h3>Computer Vision</h3>
+                    <p>Advanced image processing techniques extract meaningful features from fabric textures to identify anomalies with high precision.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="defects" class="defect-types">
+        <div class="container">
+            <h2>Fabric Defect Types</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 2rem;">Our system is trained to detect and classify the following common fabric defects with high accuracy:</p>
+            <div class="defect-grid">
+                <div class="defect-card">
+                    <div class="defect-image">Hole Image</div>
+                    <div class="defect-content">
+                        <h3>Hole</h3>
+                        <p>An opening or tear in the fabric where warp and weft threads are missing.</p>
+                        <div class="grade grade-c">Grade C</div>
+                        <div class="grade-points">CAT System: 4 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Slub Image</div>
+                    <div class="defect-content">
+                        <h3>Slub</h3>
+                        <p>A thick spot in yarn resulting in an uneven appearance in the fabric.</p>
+                        <div class="grade grade-b">Grade B</div>
+                        <div class="grade-points">CAT System: 2 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Oil Stain Image</div>
+                    <div class="defect-content">
+                        <h3>Oil Stain</h3>
+                        <p>Discoloration caused by machine oil or lubricants during manufacturing.</p>
+                        <div class="grade grade-b">Grade B</div>
+                        <div class="grade-points">CAT System: 3 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Thread Break Image</div>
+                    <div class="defect-content">
+                        <h3>Thread Break</h3>
+                        <p>Broken threads in warp or weft direction creating visible gaps or irregularities.</p>
+                        <div class="grade grade-c">Grade C</div>
+                        <div class="grade-points">CAT System: 3 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Color Variation Image</div>
+                    <div class="defect-content">
+                        <h3>Color Variation</h3>
+                        <p>Inconsistent color across the fabric surface due to dyeing issues.</p>
+                        <div class="grade grade-b">Grade B</div>
+                        <div class="grade-points">CAT System: 2 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Knot Image</div>
+                    <div class="defect-content">
+                        <h3>Knot</h3>
+                        <p>Joint formed by tying two ends of yarn together, creating a visible bump.</p>
+                        <div class="grade grade-a">Grade A</div>
+                        <div class="grade-points">CAT System: 1 point</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Missing Yarn Image</div>
+                    <div class="defect-content">
+                        <h3>Missing Yarn</h3>
+                        <p>Absence of yarn in warp or weft direction creating visible lines or patterns.</p>
+                        <div class="grade grade-b">Grade B</div>
+                        <div class="grade-points">CAT System: 2 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Nep Image</div>
+                    <div class="defect-content">
+                        <h3>Nep</h3>
+                        <p>Small knot of tangled fibers appearing as a small speck on fabric surface.</p>
+                        <div class="grade grade-a">Grade A</div>
+                        <div class="grade-points">CAT System: 1 point</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Float Image</div>
+                    <div class="defect-content">
+                        <h3>Float</h3>
+                        <p>Yarn improperly interlaced, creating an elongated section on fabric surface.</p>
+                        <div class="grade grade-b">Grade B</div>
+                        <div class="grade-points">CAT System: 2 points</div>
+                    </div>
+                </div>
+                <div class="defect-card">
+                    <div class="defect-image">Crease Mark Image</div>
+                    <div class="defect-content">
+                        <h3>Crease Mark</h3>
+                        <p>Permanent fold or wrinkle formed during processing or finishing.</p>
+                        <div class="grade grade-a">Grade A</div>
+                        <div class="grade-points">CAT System: 1 point</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="grading" class="grading-system">
+        <div class="container">
+            <h2>Fabric Grading System</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 2rem;">VisionTex implements both the American Grading System and a CAT (Categorized Attributes of Textiles) points system for comprehensive defect evaluation:</p>
+            
+            <h3 style="text-align: center; margin-top: 3rem;">American Grading System</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Grade</th>
+                        <th>Description</th>
+                        <th>Quality Level</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span style="color: #4ade80; font-weight: bold;">Grade A</span></td>
+                        <td>Minor defects with minimal impact on quality</td>
+                        <td>Premium Quality</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #fcd34d; font-weight: bold;">Grade B</span></td>
+                        <td>Moderate defects with some impact on appearance</td>
+                        <td>Standard Quality</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #f87171; font-weight: bold;">Grade C</span></td>
+                        <td>Major defects affecting functionality or appearance</td>
+                        <td>Secondary Quality</td>
+                    </tr>
+                    <tr>
+                        <td><span style="color: #f43f5e; font-weight: bold;">Grade D</span></td>
+                        <td>Severe defects making fabric unsuitable for primary use</td>
+                        <td>Rejected</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3 style="text-align: center; margin-top: 3rem;">CAT Points System</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Points</th>
+                        <th>Defect Severity</th>
+                        <th>Impact on Fabric Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1 Point</td>
+                        <td>Minor defect (barely noticeable)</td>
+                        <td>0-5% reduction</td>
+                    </tr>
+                    <tr>
+                        <td>2 Points</td>
+                        <td>Noticeable defect (visible on close inspection)</td>
+                        <td>5-15% reduction</td>
+                    </tr>
+                    <tr>
+                        <td>3 Points</td>
+                        <td>Significant defect (readily visible)</td>
+                        <td>15-30% reduction</td>
+                    </tr>
+                    <tr>
+                        <td>4 Points</td>
+                        <td>Major defect (severely affecting fabric quality)</td>
+                        <td>30-50% reduction</td>
+                    </tr>
+                    <tr>
+                        <td>5 Points</td>
+                        <td>Critical defect (renders fabric unusable for intended purpose)</td>
+                        <td>>50% reduction</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p style="text-align: center; margin-top: 2rem;">Our system calculates total points per unit area to determine overall fabric quality and pricing recommendations.</p>
+        </div>
+    </section>
+
+    <section id="about" class="about">
+        <div class="container">
+            <h2>About VisionTex</h2>
+            <div class="about-container">
+                <div class="about-image">
+                    <img src="/api/placeholder/500/300" alt="VisionTex team">
+                </div>
+                <div class="about-content">
+                    <p>VisionTex is an innovative technology company specializing in AI-powered quality control solutions for the textile industry. Founded as a research project, our mission is to revolutionize fabric inspection through advanced computer vision technology.</p>
+                    <p>Our team combines expertise in artificial intelligence, computer vision, and textile manufacturing to deliver a comprehensive fabric defect detection system that enhances quality control while reducing costs and waste.</p>
+                    <p>This Final Year Project represents the culmination of extensive research and development in applying YOLOv8 object detection to the unique challenges of textile quality assessment.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="team">
+        <div class="container">
+            <h2>Our Team</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 2rem;">
+                Meet the talented individuals behind the VisionTex fabric defect detection system:
+            </p>
+            <div class="team-container">
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="Zain1.jpg" alt="Muhammad Zain Tariq">
+                    </div>
+                    <div class="member-info">
+                        <h3>Muhammad Zain Tariq</h3>
+                        <div class="member-id">21K-3090</div>
+                        <div class="member-role">Computer Vision Specialist</div>
+                        <div class="social-icons">
+                            <a href="https://www.linkedin.com/in/zain-tariq-16b7261a3?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="https://github.com/zaintariq-dev" class="social-icon"><i class="fab fa-github"></i></a>
+                            <a href="mailto:zain404khan@gmail.com" class="social-icon"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="/api/placeholder/180/180" alt="Umer Khan">
+                    </div>
+                    <div class="member-info">
+                        <h3>Umer Khan</h3>
+                        <div class="member-id">21K-4939</div>
+                        <div class="member-role">Machine Learning Engineer</div>
+                        <div class="social-icons">
+                            <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                            <a href="#" class="social-icon"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="team-member">
+                    <div class="member-image">
+                        <img src="/api/placeholder/180/180" alt="Zaki Mustafa">
+                    </div>
+                    <div class="member-info">
+                        <h3>Zaki Mustafa</h3>
+                        <div class="member-id">21K-3216</div>
+                        <div class="member-role">Software Developer</div>
+                        <div class="social-icons">
+                            <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+                            <a href="#" class="social-icon"><i class="fas fa-envelope"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2>Contact Us</h2>
+            <div class="contact-form glow">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" placeholder="Your Name">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Your Email">
+                </div>
+                <div class="form-group">
+                    <label for="company">Company</label>
+                    <input type="text" id="company" placeholder="Your Company">
+                </div>
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" rows="5" placeholder="How can we help you?"></textarea>
+                </div>
+                <button class="btn">Submit <i class="fas fa-paper-plane ml-2"></i></button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">Vision<span>Tex</span></div>
+                <div class="footer-links">
+                    <a href="#home">Home</a>
+                    <a href="#features">Features</a>
+                    <a href="#demo">Demo</a>
+                    <a href="#defects">Defect Types</a>
+                    <a href="#grading">Grading System</a>
+                    <a href="#about">About</a>
+                    <a href="#team">Team</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="https://github.com/VisionTex"><i class="fab fa-github"></i></a>
+                </div>
+                <p class="copyright">&copy; 2025 VisionTex. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const navLinks = document.getElementById('navLinks');
+            
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    navLinks.classList.toggle('active');
+                    const icon = mobileMenuBtn.querySelector('i');
+                    if (icon.classList.contains('fa-bars')) {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    } else {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                });
+            }
+            
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Close mobile menu if open
+                    if (navLinks.classList.contains('active')) {
+                        navLinks.classList.remove('active');
+                        const icon = mobileMenuBtn.querySelector('i');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    }
+                    
+                    const targetId = this.getAttribute('href');
+                    const targetElement = document.querySelector(targetId);
+                    
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 70,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+            
+            // Create animated particles
+            const particles = document.getElementById('particles');
+            if (particles) {
+                for (let i = 0; i < 20; i++) {
+                    createParticle(particles);
+                }
+            }
+            
+            // Highlight active nav item on scroll
+            const sections = document.querySelectorAll('section');
+            const navItems = document.querySelectorAll('.nav-links a');
+            
+            window.addEventListener('scroll', function() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (pageYOffset >= sectionTop - 100) {
+                        current = section.getAttribute('id');
+                    }
+                });
+                
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('href') === `#${current}`) {
+                        item.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        // Function to create a single particle
+        function createParticle(container) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Random size between 2px and 6px
+            const size = Math.random() * 4 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            
+            // Random position
+            const posX = Math.random() * 100;
+            const posY = Math.random() * 100;
+            particle.style.left = `${posX}%`;
+            particle.style.top = `${posY}%`;
+            
+            // Random animation duration between 15s and 30s
+            const duration = Math.random() * 15 + 15;
+            particle.style.animationDuration = `${duration}s`;
+            
+            // Random delay
+            const delay = Math.random() * 5;
+            particle.style.animationDelay = `${delay}s`;
+            
+            // Add to container
+            container.appendChild(particle);
+        }
+    </script>
+</body>
+</html>
